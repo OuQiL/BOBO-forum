@@ -42,7 +42,7 @@ type PostResponse struct {
 
 type SearchRequest struct {
 	Keyword string `form:"keyword"`
-	Type    string `form:"type,options=post|user"`
+	Type    string `form:"type,options=post|user,default=post"`
 	Page    int    `form:"page,default=1"`
 	Size    int    `form:"size,default=10"`
 }
