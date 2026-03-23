@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bobo-forum-config
+  namespace: bobo-forum
+data:
+  auth-service-port: "8001"
+  post-service-port: "8002"
+  search-service-port: "8003"
+  interaction-service-port: "8004"
+  gateway-port: "8080"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+  namespace: bobo-forum
+data:
+  gateway.yaml: |
+    Name: api-gateway
+    Host: 0.0.0.0
+    Port: 8080
+
+    Auth:
+      Endpoints:
+        - auth-rpc:8001
+
+    Post:
+      Endpoints:
+        - post-rpc:8002
+
+    Search:
+      Endpoints:
+        - search-rpc:8003
+
+    Interaction:
+      Endpoints:
+        - interaction-rpc:8004
+
+    Log:
+      ServiceName: api-gateway
+      Mode: console
+      Encoding: json

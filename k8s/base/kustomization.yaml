@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: bobo-forum
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - auth-deployment.yaml
+  - auth-service.yaml
+  - post-deployment.yaml
+  - post-service.yaml
+  - search-deployment.yaml
+  - search-service.yaml
+  - interaction-deployment.yaml
+  - interaction-service.yaml
+  - gateway-deployment.yaml
+  - gateway-service.yaml
+  - ingress.yaml
+
+commonLabels:
+  project: bobo-forum
+  managed-by: kustomize

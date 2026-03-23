@@ -1,0 +1,24 @@
+Name: api-gateway
+Host: 0.0.0.0
+Port: 8080
+
+Auth:
+  Endpoints:
+    - auth-rpc:8001
+
+Post:
+  Endpoints:
+    - post-rpc:8002
+
+Search:
+  Endpoints:
+    - search-rpc:8003
+
+Interaction:
+  Endpoints:
+    - interaction-rpc:8004
+
+Log:
+  ServiceName: api-gateway
+  Mode: console
+  Encoding: json

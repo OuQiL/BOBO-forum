@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: interaction-service
+  namespace: bobo-forum
+  labels:
+    app: interaction-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: interaction-service
+  template:
+    metadata:
+      labels:
+        app: interaction-service
+    spec:
+      containers:
+        - name: interaction
+          image: bobo-forum/interaction:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8004
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: bobo-forum-config
+                  key: interaction-service-port
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            tcpSocket:
+              port: 8004
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 8004
+            initialDelaySeconds: 5
+            periodSeconds: 5
