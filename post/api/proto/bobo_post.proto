@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package post.v1;
+
+option go_package = "post/api/proto";
+
+message CreatePostRequest {
+    int64 user_id = 1;
+    int64 community_id = 2;
+    string title = 3;
+    string content = 4;
+    repeated string tags = 5;
+}
+
+message PostInfo {
+    int64 id = 1;
+    int64 user_id = 2;
+    int64 community_id = 3;
+    string username = 4;
+    string title = 5;
+    string content = 6;
+    repeated string tags = 7;
+    int64 like_count = 8;
+    int64 comment_count = 9;
+    int64 view_count = 10;
+    int64 created_at = 11;
+    int64 updated_at = 12;
+}
+
+message CreatePostResponse {
+    PostInfo post = 1;
+}
+
+message GetPostRequest {
+    int64 post_id = 1;
+}
+
+message GetPostResponse {
+    PostInfo post = 1;
+    repeated CommentInfo comments = 2;
+}
+
+message ListPostsRequest {
+    int64 page = 1;
+    int64 page_size = 2;
+    int64 community_id = 3;
+    string tag = 4;
+}
+
+message ListPostsResponse {
+    repeated PostInfo posts = 1;
+    int64 total = 2;
+}
+
+message CommentInfo {
+    int64 id = 1;
+    int64 post_id = 2;
+    int64 user_id = 3;
+    string username = 4;
+    string content = 5;
+    int64 parent_id = 6;
+    int64 created_at = 7;
+    int64 updated_at = 8;
+}
+
+message UpdatePostRequest {
+    int64 post_id = 1;
+    int64 user_id = 2;
+    string title = 3;
+    string content = 4;
+    repeated string tags = 5;
+}
+
+message UpdatePostResponse {
+    PostInfo post = 1;
+}
+
+message DeletePostRequest {
+    int64 post_id = 1;
+    int64 user_id = 2;
+}
+
+message DeletePostResponse {
+    bool success = 1;
+}
+
+message CreateCommentRequest {
+    int64 post_id = 1;
+    int64 user_id = 2;
+    string content = 3;
+    int64 parent_id = 4;
+}
+
+message CreateCommentResponse {
+    CommentInfo comment = 1;
+}
+
+message DeleteCommentRequest {
+    int64 comment_id = 1;
+    int64 user_id = 2;
+}
+
+message DeleteCommentResponse {
+    bool success = 1;
+}
+
+message IncrementViewCountRequest {
+    int64 post_id = 1;
+}
+
+message IncrementViewCountResponse {
+    bool success = 1;
+}
+
+message LikePostRequest {
+    int64 post_id = 1;
+    int64 user_id = 2;
+}
+
+message LikePostResponse {
+    bool success = 1;
+    bool liked = 2;
+}
+
+service Post {
+    rpc CreatePost(CreatePostRequest) returns (CreatePostResponse);
+    rpc GetPost(GetPostRequest) returns (GetPostResponse);
+    rpc ListPosts(ListPostsRequest) returns (ListPostsResponse);
+    rpc UpdatePost(UpdatePostRequest) returns (UpdatePostResponse);
+    rpc DeletePost(DeletePostRequest) returns (DeletePostResponse);
+    rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse);
+    rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse);
+    rpc IncrementViewCount(IncrementViewCountRequest) returns (IncrementViewCountResponse);
+    rpc LikePost(LikePostRequest) returns (LikePostResponse);
+}

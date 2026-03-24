@@ -1,0 +1,13 @@
+Name: post
+ListenOn: 0.0.0.0:8002
+
+MySQL:
+  DataSource: root:li200602@tcp(127.0.0.1:3306)/bobo_db?charset=utf8mb4&parseTime=true&loc=Local
+
+Redis:
+  Host: 127.0.0.1:6379
+  Type: node
+  Pass: ""
+
+Log:
+  File: post.log
