@@ -1,17 +1,20 @@
 package config
 
 import (
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/zrpc"
 )
 
 type Config struct {
 	zrpc.RpcServerConf
-	Auth  AuthConfig
-	MySQL sqlx.SqlConf
+	JwtAuth AuthConfig
+	MySQL   MySQLConfig
 }
 
 type AuthConfig struct {
 	AccessSecret string
 	AccessExpire int64
+}
+
+type MySQLConfig struct {
+	DataSource string
 }

@@ -9,10 +9,73 @@ import (
 	"api-gateway/internal/svc"
 	"api-gateway/internal/types"
 
+	"github.com/zeromicro/go-zero/rest"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func RegisterHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func RegisterHandler(server *rest.Server, svcCtx *svc.ServiceContext) {
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/auth/register",
+				Handler: RegisterHandlerFunc(svcCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/auth/login",
+				Handler: LoginHandlerFunc(svcCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/posts",
+				Handler: CreatePostHandlerFunc(svcCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/v1/posts/:id",
+				Handler: DeletePostHandlerFunc(svcCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/search",
+				Handler: SearchHandlerFunc(svcCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/interaction/like",
+				Handler: LikeHandlerFunc(svcCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/interaction/comment",
+				Handler: CommentHandlerFunc(svcCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/interaction/follow",
+				Handler: FollowHandlerFunc(svcCtx),
+			},
+		},
+	)
+}
+
+func RegisterHandlerFunc(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.RegisterRequest
 		if err := httpx.Parse(r, &req); err != nil {
@@ -30,7 +93,7 @@ func RegisterHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
-func LoginHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func LoginHandlerFunc(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.LoginRequest
 		if err := httpx.Parse(r, &req); err != nil {
@@ -48,7 +111,7 @@ func LoginHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
-func CreatePostHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func CreatePostHandlerFunc(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.CreatePostRequest
 		if err := httpx.Parse(r, &req); err != nil {
@@ -66,7 +129,7 @@ func CreatePostHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
-func DeletePostHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func DeletePostHandlerFunc(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := getPathInt64(r, "id")
 		if err != nil {
@@ -84,7 +147,7 @@ func DeletePostHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
-func SearchHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func SearchHandlerFunc(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.SearchRequest
 		if err := httpx.Parse(r, &req); err != nil {
@@ -102,7 +165,7 @@ func SearchHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
-func LikeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func LikeHandlerFunc(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.LikeRequest
 		if err := httpx.Parse(r, &req); err != nil {
@@ -120,7 +183,7 @@ func LikeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
-func CommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func CommentHandlerFunc(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.CommentRequest
 		if err := httpx.Parse(r, &req); err != nil {
@@ -138,7 +201,7 @@ func CommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
-func FollowHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func FollowHandlerFunc(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.FollowRequest
 		if err := httpx.Parse(r, &req); err != nil {

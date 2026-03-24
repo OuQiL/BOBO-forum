@@ -4,7 +4,7 @@ Port: 8080
 
 Auth:
   Endpoints:
-    - auth-rpc:8001
+    - 127.0.0.1:8001
 
 Post:
   Endpoints:

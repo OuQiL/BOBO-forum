@@ -1,7 +1,7 @@
 Name: auth
 ListenOn: 0.0.0.0:8001
 
-Auth:
+JwtAuth:
   AccessSecret: 123isMySecret
   AccessExpire: 86400
 

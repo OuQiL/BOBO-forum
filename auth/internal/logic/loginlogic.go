@@ -2,10 +2,12 @@ package logic
 
 import (
 	"context"
+	"errors"
 
-	"auth/auth"
+	"auth/api/proto"
+	"auth/internal/model"
+	"auth/internal/pkg/jwt"
 	"auth/internal/svc"
-	"auth/jwt"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,29 +26,42 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 	}
 }
 
-func (l *LoginLogic) Login(in *auth.LoginRequest) (*auth.LoginResponse, error) {
-	type user struct {
-		ID    int64
-		Email string
+func (l *LoginLogic) Login(in *proto.LoginRequest) (*proto.LoginResponse, error) {
+	user, err := l.svcCtx.UserRepo.FindByUsernameAndPassword(l.ctx, in.Username, in.Password)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("invalid username or password")
 	}
 
-	var u user
-	err := l.svcCtx.DB.QueryRow(&u, "SELECT id, email FROM users WHERE username=? AND password=?", in.Username, in.Password)
+	token, err := jwt.GenerateToken(user.ID, user.Username, l.svcCtx.Config.JwtAuth.AccessSecret, l.svcCtx.Config.JwtAuth.AccessExpire)
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := jwt.GenerateToken(u.ID, in.Username, l.svcCtx.Config.Auth.AccessSecret, l.svcCtx.Config.Auth.AccessExpire)
-	if err != nil {
-		return nil, err
-	}
-
-	return &auth.LoginResponse{
+	return &proto.LoginResponse{
 		Token: token,
-		UserInfo: &auth.UserInfo{
-			Id:       u.ID,
-			Username: in.Username,
-			Email:    u.Email,
+		UserInfo: &proto.UserInfo{
+			Id:       user.ID,
+			Username: user.Username,
+			Email:    user.Email,
+		},
+	}, nil
+}
+
+func (l *LoginLogic) LoginWithUser(user *model.User) (*proto.LoginResponse, error) {
+	token, err := jwt.GenerateToken(user.ID, user.Username, l.svcCtx.Config.JwtAuth.AccessSecret, l.svcCtx.Config.JwtAuth.AccessExpire)
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.LoginResponse{
+		Token: token,
+		UserInfo: &proto.UserInfo{
+			Id:       user.ID,
+			Username: user.Username,
+			Email:    user.Email,
 		},
 	}, nil
 }

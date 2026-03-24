@@ -3,9 +3,10 @@ package logic
 import (
 	"context"
 
-	"auth/auth"
+	"auth/api/proto"
+	"auth/internal/model"
+	"auth/internal/pkg/jwt"
 	"auth/internal/svc"
-	"auth/jwt"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,26 +25,26 @@ func NewRegisterLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Register
 	}
 }
 
-func (l *RegisterLogic) Register(in *auth.RegisterRequest) (*auth.LoginResponse, error) {
-	result, err := l.svcCtx.DB.Exec("INSERT INTO users(username,password,email)VALUES(?,?,?)", in.Username, in.Password, in.Email)
-	// TODO:bcrypt password
+func (l *RegisterLogic) Register(in *proto.RegisterRequest) (*proto.LoginResponse, error) {
+	user := &model.User{
+		Username:     in.Username,
+		PasswordHash: in.Password,
+		Email:        in.Email,
+	}
+
+	userID, err := l.svcCtx.UserRepo.Create(l.ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	userID, err := result.LastInsertId()
+	token, err := jwt.GenerateToken(userID, in.Username, l.svcCtx.Config.JwtAuth.AccessSecret, l.svcCtx.Config.JwtAuth.AccessExpire)
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := jwt.GenerateToken(userID, in.Username, l.svcCtx.Config.Auth.AccessSecret, l.svcCtx.Config.Auth.AccessExpire)
-	if err != nil {
-		return nil, err
-	}
-
-	return &auth.LoginResponse{
+	return &proto.LoginResponse{
 		Token: token,
-		UserInfo: &auth.UserInfo{
+		UserInfo: &proto.UserInfo{
 			Id:       userID,
 			Username: in.Username,
 			Email:    in.Email,

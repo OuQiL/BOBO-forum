@@ -7,6 +7,8 @@ import (
 	"api-gateway/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
+
+	auth "auth/pkg/client/auth"
 )
 
 type AuthLogic struct {
@@ -24,32 +26,41 @@ func NewAuthLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AuthLogic {
 }
 
 func (l *AuthLogic) Register(req *types.RegisterRequest) (resp interface{}, err error) {
-	// TODO: 调用auth.rpc服务进行用户注册
-	// conn := l.svcCtx.AuthRpc
-	// client := auth.NewAuthClient(conn)
-	// return client.Register(l.ctx, &auth.RegisterRequest{...})
+	res, err := l.svcCtx.AuthRpc.Register(l.ctx, &auth.RegisterRequest{
+		Username: req.Username,
+		Password: req.Password,
+		Email:    req.Email,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{
 		"message": "注册成功",
-		"user":    req.Username,
+		"user_id": res.UserInfo.Id,
+		"token":   res.Token,
 	}, nil
 }
 
 func (l *AuthLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, err error) {
-	// TODO: 调用auth.rpc服务进行用户登录
-	// TODO: 生成JWT token
-	// TODO: 返回用户信息
+	res, err := l.svcCtx.AuthRpc.Login(l.ctx, &auth.LoginRequest{
+		Username: req.Username,
+		Password: req.Password,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	return &types.LoginResponse{
-		Token: "demo-token-placeholder",
+		Token: res.Token,
 		UserInfo: struct {
 			ID       int64  `json:"id"`
 			Username string `json:"username"`
 			Email    string `json:"email"`
 		}{
-			ID:       1,
-			Username: req.Username,
-			Email:    "demo@example.com",
+			ID:       res.UserInfo.Id,
+			Username: res.UserInfo.Username,
+			Email:    res.UserInfo.Email,
 		},
 	}, nil
 }

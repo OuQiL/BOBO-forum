@@ -24,7 +24,7 @@ func main() {
 	defer server.Stop()
 
 	ctx := svc.NewServiceContext(c)
-	handler.RegisterHandlers(server, ctx)
+	handler.RegisterHandler(server, ctx)
 
 	fmt.Printf("Starting api-gateway at %s:%d...\n", c.Host, c.Port)
 	server.Start()
