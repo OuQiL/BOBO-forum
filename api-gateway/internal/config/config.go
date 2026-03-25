@@ -12,4 +12,13 @@ type Config struct {
 	Post        zrpc.RpcClientConf
 	Search      zrpc.RpcClientConf
 	Interaction zrpc.RpcClientConf
+
+	JWT JWTConfig
+}
+
+type JWTConfig struct {
+	Secret      string
+	Expire      int64
+	PrevSecret  string
+	PrevExpire  int64
 }

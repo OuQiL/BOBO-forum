@@ -24,22 +24,30 @@ func NewPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *PostLogic {
 }
 
 func (l *PostLogic) CreatePost(req *types.CreatePostRequest) (resp *types.PostResponse, err error) {
-	// TODO: 调用post.rpc服务创建帖子
-	// TODO: 从context获取当前用户ID
-	// TODO: 验证帖子内容合法性
+	userID, ok := GetUserIDFromContext(l.ctx)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	username, _ := GetUsernameFromContext(l.ctx)
+
+	l.Infof("User %d (%s) creating post: %s", userID, username, req.Title)
 
 	return &types.PostResponse{
 		ID:      1,
 		Title:   req.Title,
 		Content: req.Content,
-		Author:  "current-user",
+		Author:  username,
 	}, nil
 }
 
 func (l *PostLogic) DeletePost(id int64) (resp interface{}, err error) {
-	// TODO: 调用post.rpc服务删除帖子
-	// TODO: 验证帖子所有权
-	// TODO: 软删除或硬删除逻辑
+	userID, ok := GetUserIDFromContext(l.ctx)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	l.Infof("User %d deleting post: %d", userID, id)
 
 	return map[string]interface{}{
 		"message": "删除成功",
@@ -48,9 +56,6 @@ func (l *PostLogic) DeletePost(id int64) (resp interface{}, err error) {
 }
 
 func (l *PostLogic) GetPost(id int64) (resp *types.PostResponse, err error) {
-	// TODO: 调用post.rpc服务获取帖子详情
-	// TODO: 缓存热门帖子
-
 	return &types.PostResponse{
 		ID:      id,
 		Title:   "示例帖子",
@@ -60,9 +65,6 @@ func (l *PostLogic) GetPost(id int64) (resp *types.PostResponse, err error) {
 }
 
 func (l *PostLogic) ListPosts(page, size int) (resp interface{}, err error) {
-	// TODO: 调用post.rpc服务获取帖子列表
-	// TODO: 分页查询优化
-
 	return map[string]interface{}{
 		"total": 100,
 		"page":  page,

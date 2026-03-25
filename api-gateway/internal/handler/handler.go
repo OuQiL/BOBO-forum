@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"api-gateway/internal/logic"
+	"api-gateway/internal/middleware"
 	"api-gateway/internal/svc"
 	"api-gateway/internal/types"
 
@@ -14,6 +15,8 @@ import (
 )
 
 func RegisterHandler(server *rest.Server, svcCtx *svc.ServiceContext) {
+	auth := middleware.JWTAuthMiddleware(svcCtx)
+
 	server.AddRoutes(
 		[]rest.Route{
 			{
@@ -32,21 +35,6 @@ func RegisterHandler(server *rest.Server, svcCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/posts",
-				Handler: CreatePostHandlerFunc(svcCtx),
-			},
-			{
-				Method:  http.MethodDelete,
-				Path:    "/api/v1/posts/:id",
-				Handler: DeletePostHandlerFunc(svcCtx),
-			},
-		},
-	)
-
-	server.AddRoutes(
-		[]rest.Route{
-			{
 				Method:  http.MethodGet,
 				Path:    "/api/v1/search",
 				Handler: SearchHandlerFunc(svcCtx),
@@ -58,18 +46,28 @@ func RegisterHandler(server *rest.Server, svcCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodPost,
+				Path:    "/api/v1/posts",
+				Handler: auth(CreatePostHandlerFunc(svcCtx)),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/v1/posts/:id",
+				Handler: auth(DeletePostHandlerFunc(svcCtx)),
+			},
+			{
+				Method:  http.MethodPost,
 				Path:    "/api/v1/interaction/like",
-				Handler: LikeHandlerFunc(svcCtx),
+				Handler: auth(LikeHandlerFunc(svcCtx)),
 			},
 			{
 				Method:  http.MethodPost,
 				Path:    "/api/v1/interaction/comment",
-				Handler: CommentHandlerFunc(svcCtx),
+				Handler: auth(CommentHandlerFunc(svcCtx)),
 			},
 			{
 				Method:  http.MethodPost,
 				Path:    "/api/v1/interaction/follow",
-				Handler: FollowHandlerFunc(svcCtx),
+				Handler: auth(FollowHandlerFunc(svcCtx)),
 			},
 		},
 	)

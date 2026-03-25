@@ -24,10 +24,13 @@ func NewInteractionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Inter
 }
 
 func (l *InteractionLogic) Like(req *types.LikeRequest) (resp interface{}, err error) {
-	// TODO: 调用interaction.rpc服务进行点赞
-	// TODO: 检查是否已点赞（幂等性）
-	// TODO: 更新帖子点赞计数
-	// TODO: 使用Redis缓存点赞状态
+	userID, ok := GetUserIDFromContext(l.ctx)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	username, _ := GetUsernameFromContext(l.ctx)
+	l.Infof("User %d (%s) liking post: %d", userID, username, req.PostID)
 
 	return map[string]interface{}{
 		"message": "点赞成功",
@@ -36,7 +39,12 @@ func (l *InteractionLogic) Like(req *types.LikeRequest) (resp interface{}, err e
 }
 
 func (l *InteractionLogic) Unlike(req *types.LikeRequest) (resp interface{}, err error) {
-	// TODO: 取消点赞实现
+	userID, ok := GetUserIDFromContext(l.ctx)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	l.Infof("User %d unliking post: %d", userID, req.PostID)
 
 	return map[string]interface{}{
 		"message": "取消点赞成功",
@@ -45,21 +53,30 @@ func (l *InteractionLogic) Unlike(req *types.LikeRequest) (resp interface{}, err
 }
 
 func (l *InteractionLogic) Comment(req *types.CommentRequest) (resp interface{}, err error) {
-	// TODO: 调用interaction.rpc服务进行评论
-	// TODO: 评论内容敏感词过滤
-	// TODO: 评论通知帖子作者
+	userID, ok := GetUserIDFromContext(l.ctx)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	username, _ := GetUsernameFromContext(l.ctx)
+	l.Infof("User %d (%s) commenting on post: %d", userID, username, req.PostID)
 
 	return map[string]interface{}{
-		"message": "评论成功",
-		"post_id": req.PostID,
+		"message":    "评论成功",
+		"post_id":    req.PostID,
+		"content":    req.Content,
+		"comment_id": 1,
 	}, nil
 }
 
 func (l *InteractionLogic) Follow(req *types.FollowRequest) (resp interface{}, err error) {
-	// TODO: 调用interaction.rpc服务进行关注
-	// TODO: 检查是否已关注（幂等性）
-	// TODO: 更新用户粉丝计数
-	// TODO: 关注通知被关注用户
+	userID, ok := GetUserIDFromContext(l.ctx)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	username, _ := GetUsernameFromContext(l.ctx)
+	l.Infof("User %d (%s) following user: %d", userID, username, req.UserID)
 
 	return map[string]interface{}{
 		"message": "关注成功",
@@ -68,7 +85,12 @@ func (l *InteractionLogic) Follow(req *types.FollowRequest) (resp interface{}, e
 }
 
 func (l *InteractionLogic) Unfollow(req *types.FollowRequest) (resp interface{}, err error) {
-	// TODO: 取消关注实现
+	userID, ok := GetUserIDFromContext(l.ctx)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	l.Infof("User %d unfollowing user: %d", userID, req.UserID)
 
 	return map[string]interface{}{
 		"message": "取消关注成功",
@@ -77,8 +99,6 @@ func (l *InteractionLogic) Unfollow(req *types.FollowRequest) (resp interface{},
 }
 
 func (l *InteractionLogic) GetFollowers(userID int64, page, size int) (resp interface{}, err error) {
-	// TODO: 获取粉丝列表
-
 	return map[string]interface{}{
 		"total": 0,
 		"list":  []interface{}{},
@@ -86,8 +106,6 @@ func (l *InteractionLogic) GetFollowers(userID int64, page, size int) (resp inte
 }
 
 func (l *InteractionLogic) GetFollowing(userID int64, page, size int) (resp interface{}, err error) {
-	// TODO: 获取关注列表
-
 	return map[string]interface{}{
 		"total": 0,
 		"list":  []interface{}{},

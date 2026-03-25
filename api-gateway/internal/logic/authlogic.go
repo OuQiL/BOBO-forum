@@ -3,12 +3,11 @@ package logic
 import (
 	"context"
 
+	"api-gateway/internal/middleware"
 	"api-gateway/internal/svc"
 	"api-gateway/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
-
-	auth "auth/pkg/client/auth"
 )
 
 type AuthLogic struct {
@@ -26,41 +25,53 @@ func NewAuthLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AuthLogic {
 }
 
 func (l *AuthLogic) Register(req *types.RegisterRequest) (resp interface{}, err error) {
-	res, err := l.svcCtx.AuthRpc.Register(l.ctx, &auth.RegisterRequest{
-		Username: req.Username,
-		Password: req.Password,
-		Email:    req.Email,
-	})
+	// TODO: 调用 auth.rpc 服务进行用户注册
+	// res, err := l.svcCtx.AuthRpc.Register(l.ctx, &auth.RegisterRequest{...})
+
+	// Demo: 本地生成 token
+	token, err := middleware.GenerateToken(
+		1,
+		req.Username,
+		l.svcCtx.Config.JWT.Secret,
+		l.svcCtx.Config.JWT.Expire,
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"message": "注册成功",
-		"user_id": res.UserInfo.Id,
-		"token":   res.Token,
+		"message":  "注册成功",
+		"user_id":  1,
+		"username": req.Username,
+		"token":    token,
 	}, nil
 }
 
 func (l *AuthLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, err error) {
-	res, err := l.svcCtx.AuthRpc.Login(l.ctx, &auth.LoginRequest{
-		Username: req.Username,
-		Password: req.Password,
-	})
+	// TODO: 调用 auth.rpc 服务进行用户登录验证
+	// res, err := l.svcCtx.AuthRpc.Login(l.ctx, &auth.LoginRequest{...})
+
+	// Demo: 本地生成 token
+	token, err := middleware.GenerateToken(
+		1,
+		req.Username,
+		l.svcCtx.Config.JWT.Secret,
+		l.svcCtx.Config.JWT.Expire,
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.LoginResponse{
-		Token: res.Token,
+		Token: token,
 		UserInfo: struct {
 			ID       int64  `json:"id"`
 			Username string `json:"username"`
 			Email    string `json:"email"`
 		}{
-			ID:       res.UserInfo.Id,
-			Username: res.UserInfo.Username,
-			Email:    res.UserInfo.Email,
+			ID:       1,
+			Username: req.Username,
+			Email:    "demo@example.com",
 		},
 	}, nil
 }

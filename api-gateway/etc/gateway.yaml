@@ -18,6 +18,12 @@ Interaction:
   Endpoints:
     - interaction-rpc:8004
 
+JWT:
+  Secret: b0b0-f0rum-s3cr3t-k3y-2024
+  Expire: 86400
+  PrevSecret: ""
+  PrevExpire: 0
+
 Log:
   ServiceName: api-gateway
   Mode: console
