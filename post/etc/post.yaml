@@ -3,11 +3,20 @@ ListenOn: 0.0.0.0:8002
 
 MySQL:
   DataSource: root:li200602@tcp(127.0.0.1:3306)/bobo_db?charset=utf8mb4&parseTime=true&loc=Local
+  MaxOpenConns: 100
+  MaxIdleConns: 10
+  ConnMaxLifetime: 3600
+  ConnMaxIdleTime: 600
 
 Redis:
   Host: 127.0.0.1:6379
   Type: node
   Pass: ""
+
+Cache:
+  HotPostCacheTTL: 300
+  HotPostMaxEntries: 1000
+  HotPostThreshold: 1000
 
 Log:
   File: post.log

@@ -34,16 +34,17 @@ func (l *CreatePostLogic) CreatePost(in *proto.CreatePostRequest) (*proto.Create
 
 	now := time.Now().Unix()
 	post := &model.Post{
-		UserID:      in.UserId,
-		CommunityID: in.CommunityId,
-		Title:       in.Title,
-		Content:     in.Content,
-		Tags:        string(tagsJSON),
-		LikeCount:   0,
+		UserID:       in.UserId,
+		CommunityID:  in.CommunityId,
+		Title:        in.Title,
+		Content:      in.Content,
+		Tags:         string(tagsJSON),
+		LikeCount:    0,
 		CommentCount: 0,
-		ViewCount:   0,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ViewCount:    0,
+		Status:       2,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 
 	id, err := l.svcCtx.PostRepo.Create(l.ctx, post)

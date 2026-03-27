@@ -7,6 +7,7 @@ type Comment struct {
 	Username  string
 	Content   string
 	ParentID  int64
+	Status    int64
 	CreatedAt int64
 	UpdatedAt int64
 }

@@ -25,7 +25,7 @@ func NewGetPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPostLo
 }
 
 func (l *GetPostLogic) GetPost(in *proto.GetPostRequest) (*proto.GetPostResponse, error) {
-	post, err := l.svcCtx.PostRepo.FindByID(l.ctx, in.PostId)
+	post, err := l.svcCtx.PostRepo.GetPostDetail(l.ctx, in.GetUserId(), in.GetPostId())
 	if err != nil {
 		return nil, err
 	}

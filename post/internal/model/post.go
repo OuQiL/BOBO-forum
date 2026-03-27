@@ -11,6 +11,7 @@ type Post struct {
 	LikeCount    int64
 	CommentCount int64
 	ViewCount    int64
+	Status       int64
 	CreatedAt    int64
 	UpdatedAt    int64
 }

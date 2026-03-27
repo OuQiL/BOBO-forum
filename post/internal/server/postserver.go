@@ -34,6 +34,11 @@ func (s *PostServer) ListPosts(ctx context.Context, in *proto.ListPostsRequest) 
 	return l.ListPosts(in)
 }
 
+func (s *PostServer) ListUserPosts(ctx context.Context, in *proto.ListUserPostsRequest) (*proto.ListUserPostsResponse, error) {
+	l := logic.NewListUserPostsLogic(ctx, s.svcCtx)
+	return l.ListUserPosts(in)
+}
+
 func (s *PostServer) UpdatePost(ctx context.Context, in *proto.UpdatePostRequest) (*proto.UpdatePostResponse, error) {
 	l := logic.NewUpdatePostLogic(ctx, s.svcCtx)
 	return l.UpdatePost(in)
@@ -57,9 +62,4 @@ func (s *PostServer) DeleteComment(ctx context.Context, in *proto.DeleteCommentR
 func (s *PostServer) IncrementViewCount(ctx context.Context, in *proto.IncrementViewCountRequest) (*proto.IncrementViewCountResponse, error) {
 	l := logic.NewIncrementViewCountLogic(ctx, s.svcCtx)
 	return l.IncrementViewCount(in)
-}
-
-func (s *PostServer) LikePost(ctx context.Context, in *proto.LikePostRequest) (*proto.LikePostResponse, error) {
-	l := logic.NewLikePostLogic(ctx, s.svcCtx)
-	return l.LikePost(in)
 }
