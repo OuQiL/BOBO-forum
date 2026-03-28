@@ -18,5 +18,9 @@ Cache:
   HotPostMaxEntries: 1000
   HotPostThreshold: 1000
 
+Bloom:
+  ExpectedItems: 1000000
+  FalsePositiveRate: 0.01
+
 Log:
   File: post.log

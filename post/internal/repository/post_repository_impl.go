@@ -17,10 +17,11 @@ type postRepository struct {
 	db         sqlx.SqlConn
 	redis      *redis.Redis
 	localCache *HotPostLocalCache
+	hotPostSvc *HotPostService
 }
 
-func NewPostRepository(db sqlx.SqlConn, rds *redis.Redis, localCache *HotPostLocalCache) PostRepository {
-	return &postRepository{db: db, redis: rds, localCache: localCache}
+func NewPostRepository(db sqlx.SqlConn, rds *redis.Redis, localCache *HotPostLocalCache, hotPostSvc *HotPostService) PostRepository {
+	return &postRepository{db: db, redis: rds, localCache: localCache, hotPostSvc: hotPostSvc}
 }
 
 func (r *postRepository) getViewCountFromRedis(ctx context.Context, postID int64, dbViewCount int64) int64 {
@@ -179,7 +180,11 @@ func (r *postRepository) Update(ctx context.Context, post *model.Post) error {
 
 	_, err = r.db.ExecCtx(ctx, "UPDATE posts SET title=?, content=?, tags=?, updated_at=? WHERE id=? AND user_id=?",
 		post.Title, post.Content, string(tagsJSON), post.UpdatedAt, post.ID, post.UserID)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return r.hotPostSvc.DeletePostCache(ctx, post.ID)
 }
 
 func (r *postRepository) Delete(ctx context.Context, id, userID int64) error {
@@ -187,8 +192,8 @@ func (r *postRepository) Delete(ctx context.Context, id, userID int64) error {
 	if err != nil {
 		return err
 	}
-	r.localCache.Delete(id)
-	return nil
+
+	return r.hotPostSvc.DeletePostCache(ctx, id)
 }
 
 func (r *postRepository) IncrementViewCount(ctx context.Context, postID int64) error {

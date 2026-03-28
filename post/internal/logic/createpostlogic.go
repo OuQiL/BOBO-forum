@@ -54,6 +54,8 @@ func (l *CreatePostLogic) CreatePost(in *proto.CreatePostRequest) (*proto.Create
 
 	post.ID = id
 
+	l.svcCtx.BloomFilter.Add(id)
+
 	return &proto.CreatePostResponse{
 		Post: &proto.PostInfo{
 			Id:           post.ID,

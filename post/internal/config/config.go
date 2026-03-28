@@ -10,6 +10,7 @@ type Config struct {
 	MySQL MySQLConfig
 	Redis redis.RedisConf
 	Cache LocalCacheConf
+	Bloom BloomFilterConf
 }
 
 type MySQLConfig struct {
@@ -21,7 +22,12 @@ type MySQLConfig struct {
 }
 
 type LocalCacheConf struct {
-	HotPostCacheTTL     int `json:",default=300"`
-	HotPostMaxEntries   int `json:",default=1000"`
-	HotPostThreshold    int `json:",default=1000"`
+	HotPostCacheTTL   int `json:",default=300"`
+	HotPostMaxEntries int `json:",default=1000"`
+	HotPostThreshold  int `json:",default=1000"`
+}
+
+type BloomFilterConf struct {
+	ExpectedItems     uint    `json:",default=1000000"`
+	FalsePositiveRate float64 `json:",default=0.01"`
 }

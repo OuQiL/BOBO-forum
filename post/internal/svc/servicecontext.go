@@ -19,6 +19,7 @@ type ServiceContext struct {
 	PostRepo    repository.PostRepository
 	CommentRepo repository.CommentRepository
 	HotPostSvc  *repository.HotPostService
+	BloomFilter *repository.PostBloomFilter
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -46,12 +47,23 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		c.Cache.HotPostThreshold,
 	)
 
+	hotPostSvc := repository.NewHotPostService(redisClient, hotPostCache)
+
+	bloomFilter := repository.NewPostBloomFilter(
+		c.Bloom.ExpectedItems,
+		c.Bloom.FalsePositiveRate,
+		redisClient,
+	)
+
+	postRepo := repository.NewPostRepository(sqlConn, redisClient, hotPostCache, hotPostSvc)
+
 	return &ServiceContext{
 		Config:      c,
 		DB:          sqlConn,
 		Redis:       redisClient,
-		PostRepo:    repository.NewPostRepository(sqlConn, redisClient, hotPostCache),
+		PostRepo:    postRepo,
 		CommentRepo: repository.NewCommentRepository(sqlConn),
-		HotPostSvc:  repository.NewHotPostService(redisClient, hotPostCache),
+		HotPostSvc:  hotPostSvc,
+		BloomFilter: bloomFilter,
 	}
 }
