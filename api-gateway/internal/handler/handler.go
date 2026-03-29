@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"api-gateway/internal/logic"
 	"api-gateway/internal/middleware"
@@ -48,6 +49,11 @@ func RegisterHandler(server *rest.Server, svcCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/v1/posts",
 				Handler: auth(CreatePostHandlerFunc(svcCtx)),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/posts/:id",
+				Handler: GetPostDetailHandlerFunc(svcCtx),
 			},
 			{
 				Method:  http.MethodDelete,
@@ -217,10 +223,34 @@ func FollowHandlerFunc(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
+func GetPostDetailHandlerFunc(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := getPathInt64(r, "id")
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
+		}
+
+		l := logic.NewPostLogic(r.Context(), svcCtx)
+		resp, err := l.GetPostDetail(id)
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+		} else {
+			httpx.OkJsonCtx(r.Context(), w, resp)
+		}
+	}
+}
+
 func getPathInt64(r *http.Request, key string) (int64, error) {
 	val := r.PathValue(key)
 	if val == "" {
 		val = r.URL.Query().Get(key)
+	}
+	if val == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[2] == "posts" {
+			val = pathParts[3]
+		}
 	}
 	if val == "" {
 		return 0, fmt.Errorf("missing path parameter: %s", key)

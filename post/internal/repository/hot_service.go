@@ -77,6 +77,20 @@ func (s *HotPostService) GetEmptyValueCache() *EmptyValueCache {
 	return s.emptyValueCache
 }
 
+func (s *HotPostService) ShouldCachePost(viewCount int64) bool {
+	return s.localCache.ShouldCache(viewCount)
+}
+
+func (s *HotPostService) CachePost(post *model.Post) {
+	if s.localCache.ShouldCache(post.ViewCount) {
+		s.localCache.Set(post)
+	}
+}
+
+func (s *HotPostService) GetLocalCacheSize() int {
+	return s.localCache.Size()
+}
+
 func (s *HotPostService) CalculateScore(post *model.Post) float64 {
 	baseScore := float64(post.CommentCount)*CommentWeight +
 		float64(post.ViewCount)*ViewWeight

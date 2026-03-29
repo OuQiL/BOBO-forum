@@ -5,6 +5,7 @@ import (
 
 	"api-gateway/internal/svc"
 	"api-gateway/internal/types"
+	postproto "post/api/proto"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -33,10 +34,19 @@ func (l *PostLogic) CreatePost(req *types.CreatePostRequest) (resp *types.PostRe
 
 	l.Infof("User %d (%s) creating post: %s", userID, username, req.Title)
 
-	return &types.PostResponse{
-		ID:      1,
+	postResp, err := l.svcCtx.PostRpc.CreatePost(l.ctx, &postproto.CreatePostRequest{
+		UserId:  userID,
 		Title:   req.Title,
 		Content: req.Content,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.PostResponse{
+		ID:      postResp.Post.Id,
+		Title:   postResp.Post.Title,
+		Content: postResp.Post.Content,
 		Author:  username,
 	}, nil
 }
@@ -70,5 +80,29 @@ func (l *PostLogic) ListPosts(page, size int) (resp interface{}, err error) {
 		"page":  page,
 		"size":  size,
 		"list":  []interface{}{},
+	}, nil
+}
+
+func (l *PostLogic) GetPostDetail(id int64) (resp *types.GetPostDetailResponse, err error) {
+	post, err := l.svcCtx.PostRpc.GetPost(l.ctx, &postproto.GetPostRequest{
+		PostId: id,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.GetPostDetailResponse{
+		ID:           post.Post.Id,
+		UserID:       post.Post.UserId,
+		CommunityID:  post.Post.CommunityId,
+		Username:     post.Post.Username,
+		Title:        post.Post.Title,
+		Content:      post.Post.Content,
+		Tags:         post.Post.Tags,
+		LikeCount:    post.Post.LikeCount,
+		CommentCount: post.Post.CommentCount,
+		ViewCount:    post.Post.ViewCount,
+		CreatedAt:    post.Post.CreatedAt,
+		UpdatedAt:    post.Post.UpdatedAt,
 	}, nil
 }

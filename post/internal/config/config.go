@@ -7,10 +7,10 @@ import (
 
 type Config struct {
 	zrpc.RpcServerConf
-	MySQL MySQLConfig
-	Redis redis.RedisConf
-	Cache LocalCacheConf
-	Bloom BloomFilterConf
+	MySQL     MySQLConfig
+	RedisConf redis.RedisConf
+	Cache     LocalCacheConf
+	Bloom     BloomFilterConf
 }
 
 type MySQLConfig struct {

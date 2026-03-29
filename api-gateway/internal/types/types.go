@@ -64,3 +64,22 @@ type CommentRequest struct {
 type FollowRequest struct {
 	UserID int64 `json:"user_id"`
 }
+
+type GetPostDetailRequest struct {
+	PostID int64 `path:"id"`
+}
+
+type GetPostDetailResponse struct {
+	ID           int64    `json:"id"`
+	UserID       int64    `json:"user_id"`
+	CommunityID  int64    `json:"community_id"`
+	Username     string   `json:"username"`
+	Title        string   `json:"title"`
+	Content      string   `json:"content"`
+	Tags         []string `json:"tags"`
+	LikeCount    int64    `json:"like_count"`
+	CommentCount int64    `json:"comment_count"`
+	ViewCount    int64    `json:"view_count"`
+	CreatedAt    int64    `json:"created_at"`
+	UpdatedAt    int64    `json:"updated_at"`
+}

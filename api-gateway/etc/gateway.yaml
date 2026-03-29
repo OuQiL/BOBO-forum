@@ -8,15 +8,16 @@ Auth:
 
 Post:
   Endpoints:
-    - post-rpc:8002
+    - 127.0.0.1:8002
+  Timeout: 30000
 
 Search:
   Endpoints:
-    - search-rpc:8003
+    - 127.0.0.1:8003
 
 Interaction:
   Endpoints:
-    - interaction-rpc:8004
+    - 127.0.0.1:8004
 
 JWT:
   Secret: b0b0-f0rum-s3cr3t-k3y-2024
@@ -27,4 +28,10 @@ JWT:
 Log:
   ServiceName: api-gateway
   Mode: console
-  Encoding: json
+
+MaxConns: 10000
+Timeout: 30000
+CpuThreshold: 0
+Shedding:
+  Name: api-gateway-shedding
+  Enable: false

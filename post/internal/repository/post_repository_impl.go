@@ -6,22 +6,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"post/internal/model"
+	snowid "post/pkg/snowid"
 
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 type postRepository struct {
-	db         sqlx.SqlConn
-	redis      *redis.Redis
-	localCache *HotPostLocalCache
-	hotPostSvc *HotPostService
+	db          sqlx.SqlConn
+	redis       *redis.Redis
+	localCache  *HotPostLocalCache
+	hotPostSvc  *HotPostService
+	cacheLoader *CacheLoader
 }
 
 func NewPostRepository(db sqlx.SqlConn, rds *redis.Redis, localCache *HotPostLocalCache, hotPostSvc *HotPostService) PostRepository {
-	return &postRepository{db: db, redis: rds, localCache: localCache, hotPostSvc: hotPostSvc}
+	return &postRepository{
+		db:          db,
+		redis:       rds,
+		localCache:  localCache,
+		hotPostSvc:  hotPostSvc,
+		cacheLoader: NewCacheLoader(rds, localCache),
+	}
 }
 
 func (r *postRepository) getViewCountFromRedis(ctx context.Context, postID int64, dbViewCount int64) int64 {
@@ -38,15 +47,27 @@ func (r *postRepository) Create(ctx context.Context, post *model.Post) (int64, e
 		return 0, err
 	}
 
-	result, err := r.db.ExecCtx(ctx, "INSERT INTO posts(user_id, community_id, username, title, content, tags, status, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		post.UserID, post.CommunityID, post.Username, post.Title, post.Content, string(tagsJSON), post.Status, post.CreatedAt, post.UpdatedAt)
+	postID, err := snowid.NextID()
+	if err != nil {
+		return 0, fmt.Errorf("failed to generate snowflake ID: %w", err)
+	}
+	post.ID = postID
+
+	createdAt := time.Unix(post.CreatedAt, 0)
+	updatedAt := time.Unix(post.UpdatedAt, 0)
+
+	result, err := r.db.ExecCtx(ctx, "INSERT INTO posts(id, user_id, community_id, username, title, content, tags, status, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		post.ID, post.UserID, post.CommunityID, post.Username, post.Title, post.Content, string(tagsJSON), post.Status, createdAt, updatedAt)
 	if err != nil {
 		return 0, err
 	}
 
-	postID, err := result.LastInsertId()
+	affected, err := result.RowsAffected()
 	if err != nil {
 		return 0, err
+	}
+	if affected == 0 {
+		return 0, fmt.Errorf("no rows affected")
 	}
 
 	if err := AddWhenCreate(ctx, r.redis, postID, post.UserID); err != nil {
@@ -56,22 +77,14 @@ func (r *postRepository) Create(ctx context.Context, post *model.Post) (int64, e
 	return postID, nil
 }
 func (r *postRepository) GetPostDetail(ctx context.Context, userID int64, id int64) (*model.Post, error) {
-	if post, found := r.localCache.Get(id); found {
-		post.ViewCount = r.getViewCountFromRedis(ctx, id, post.ViewCount)
-		if userID > 0 && userID != post.UserID {
-			AddRead(ctx, r.redis, id, userID)
-			post.ViewCount = r.getViewCountFromRedis(ctx, id, post.ViewCount)
-		}
-		return post, nil
-	}
-
-	var post model.Post
-	err := r.db.QueryRowCtx(ctx, &post, "SELECT id, user_id, community_id, username, title, content, tags, like_count, comment_count, view_count, status, created_at, updated_at FROM posts WHERE id=? AND status != 3", id)
+	post, err := r.cacheLoader.GetOrLoad(ctx, id, func(ctx context.Context) (*model.Post, error) {
+		return r.findByIDFromDB(ctx, id)
+	})
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
 		return nil, err
+	}
+	if post == nil {
+		return nil, nil
 	}
 
 	post.ViewCount = r.getViewCountFromRedis(ctx, id, post.ViewCount)
@@ -81,15 +94,23 @@ func (r *postRepository) GetPostDetail(ctx context.Context, userID int64, id int
 		post.ViewCount = r.getViewCountFromRedis(ctx, id, post.ViewCount)
 	}
 
-	if r.localCache.ShouldCache(post.ViewCount) {
-		r.localCache.Set(&post)
-	}
+	return post, nil
+}
 
+func (r *postRepository) findByIDFromDB(ctx context.Context, id int64) (*model.Post, error) {
+	var post model.Post
+	err := r.db.QueryRowCtx(ctx, &post, "SELECT id, user_id, community_id, username, title, content, tags, like_count, comment_count, view_count, status, UNIX_TIMESTAMP(created_at) as created_at, UNIX_TIMESTAMP(updated_at) as updated_at FROM posts WHERE id=? AND status != 3", id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
 	return &post, nil
 }
 func (r *postRepository) FindByID(ctx context.Context, id int64) (*model.Post, error) {
 	var post model.Post
-	err := r.db.QueryRowCtx(ctx, &post, "SELECT id, user_id, community_id, username, title, content, tags, like_count, comment_count, view_count, status, created_at, updated_at FROM posts WHERE id=? AND status != 3", id)
+	err := r.db.QueryRowCtx(ctx, &post, "SELECT id, user_id, community_id, username, title, content, tags, like_count, comment_count, view_count, status, UNIX_TIMESTAMP(created_at) as created_at, UNIX_TIMESTAMP(updated_at) as updated_at FROM posts WHERE id=? AND status != 3", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -212,7 +233,7 @@ func (r *postRepository) DecrementCommentCount(ctx context.Context, postID int64
 }
 
 func (r *postRepository) GetRecentPosts(ctx context.Context, days int) ([]*model.Post, error) {
-	query := "SELECT id, user_id, community_id, username, title, content, tags, like_count, comment_count, view_count, status, created_at, updated_at FROM posts WHERE status = 2 AND created_at > DATE_SUB(NOW(), INTERVAL ? DAY) ORDER BY created_at DESC"
+	query := "SELECT id, user_id, community_id, username, title, content, tags, like_count, comment_count, view_count, status, UNIX_TIMESTAMP(created_at) as created_at, UNIX_TIMESTAMP(updated_at) as updated_at FROM posts WHERE status = 2 AND created_at > DATE_SUB(NOW(), INTERVAL ? DAY) ORDER BY created_at DESC"
 
 	var posts []*model.Post
 	err := r.db.QueryRowsCtx(ctx, &posts, query, days)

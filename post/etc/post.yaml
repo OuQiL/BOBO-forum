@@ -8,7 +8,7 @@ MySQL:
   ConnMaxLifetime: 3600
   ConnMaxIdleTime: 600
 
-Redis:
+RedisConf:
   Host: 127.0.0.1:6379
   Type: node
   Pass: ""
@@ -16,7 +16,7 @@ Redis:
 Cache:
   HotPostCacheTTL: 300
   HotPostMaxEntries: 1000
-  HotPostThreshold: 1000
+  HotPostThreshold: 10
 
 Bloom:
   ExpectedItems: 1000000
@@ -24,3 +24,7 @@ Bloom:
 
 Log:
   File: post.log
+
+CpuThreshold: 0
+Timeout: 30000
+MaxConns: 10000

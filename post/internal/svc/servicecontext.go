@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"context"
 	"database/sql"
 	"time"
 
@@ -8,18 +9,20 @@ import (
 	"post/internal/repository"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 type ServiceContext struct {
-	Config      config.Config
-	DB          sqlx.SqlConn
-	Redis       *redis.Redis
-	PostRepo    repository.PostRepository
-	CommentRepo repository.CommentRepository
-	HotPostSvc  *repository.HotPostService
-	BloomFilter *repository.PostBloomFilter
+	Config        config.Config
+	DB            sqlx.SqlConn
+	Redis         *redis.Redis
+	PostRepo      repository.PostRepository
+	CommentRepo   repository.CommentRepository
+	HotPostSvc    *repository.HotPostService
+	BloomFilter   *repository.PostBloomFilter
+	ViewCountSync *repository.ViewCountSyncer
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -39,7 +42,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	db.SetConnMaxIdleTime(time.Duration(c.MySQL.ConnMaxIdleTime) * time.Second)
 
 	sqlConn := sqlx.NewSqlConnFromDB(db)
-	redisClient := redis.MustNewRedis(c.Redis)
+	redisClient := redis.MustNewRedis(c.RedisConf)
 
 	hotPostCache := repository.NewHotPostLocalCache(
 		c.Cache.HotPostMaxEntries,
@@ -57,13 +60,54 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	postRepo := repository.NewPostRepository(sqlConn, redisClient, hotPostCache, hotPostSvc)
 
-	return &ServiceContext{
-		Config:      c,
-		DB:          sqlConn,
-		Redis:       redisClient,
-		PostRepo:    postRepo,
-		CommentRepo: repository.NewCommentRepository(sqlConn),
-		HotPostSvc:  hotPostSvc,
-		BloomFilter: bloomFilter,
+	viewCountSyncer := repository.NewViewCountSyncer(redisClient, sqlConn, hotPostCache)
+
+	ctx := &ServiceContext{
+		Config:        c,
+		DB:            sqlConn,
+		Redis:         redisClient,
+		PostRepo:      postRepo,
+		CommentRepo:   repository.NewCommentRepository(sqlConn),
+		HotPostSvc:    hotPostSvc,
+		BloomFilter:   bloomFilter,
+		ViewCountSync: viewCountSyncer,
+	}
+
+	go ctx.warmupCache(context.Background())
+
+	viewCountSyncer.Start()
+
+	return ctx
+}
+
+func (s *ServiceContext) WarmupCache(ctx context.Context) error {
+	logx.Info("Starting cache warmup...")
+
+	posts, err := s.PostRepo.GetRecentPosts(ctx, 7)
+	if err != nil {
+		logx.Errorf("Failed to get recent posts for warmup: %v", err)
+		return err
+	}
+
+	warmupCount := 0
+	for _, post := range posts {
+		if s.HotPostSvc.ShouldCachePost(post.ViewCount) {
+			s.HotPostSvc.CachePost(post)
+			warmupCount++
+		}
+	}
+
+	logx.Infof("Cache warmup completed: %d posts loaded", warmupCount)
+	return nil
+}
+
+func (s *ServiceContext) warmupCache(ctx context.Context) {
+	time.Sleep(2 * time.Second)
+	s.WarmupCache(ctx)
+}
+
+func (s *ServiceContext) Stop() {
+	if s.ViewCountSync != nil {
+		s.ViewCountSync.Stop()
 	}
 }

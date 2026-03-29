@@ -32,7 +32,7 @@ func (l *CreatePostLogic) CreatePost(in *proto.CreatePostRequest) (*proto.Create
 		return nil, err
 	}
 
-	now := time.Now().Unix()
+	now := time.Now()
 	post := &model.Post{
 		UserID:       in.UserId,
 		CommunityID:  in.CommunityId,
@@ -43,8 +43,8 @@ func (l *CreatePostLogic) CreatePost(in *proto.CreatePostRequest) (*proto.Create
 		CommentCount: 0,
 		ViewCount:    0,
 		Status:       2,
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		CreatedAt:    now.Unix(),
+		UpdatedAt:    now.Unix(),
 	}
 
 	id, err := l.svcCtx.PostRepo.Create(l.ctx, post)

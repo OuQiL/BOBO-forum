@@ -8,6 +8,7 @@ import (
 	"post/internal/config"
 	"post/internal/server"
 	"post/internal/svc"
+	snowid "post/pkg/snowid"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/zrpc"
@@ -22,6 +23,10 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
+
+	if err := snowid.Init(1); err != nil {
+		panic(fmt.Sprintf("failed to initialize snowflake: %v", err))
+	}
 
 	ctx := svc.NewServiceContext(c)
 

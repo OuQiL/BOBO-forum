@@ -9,6 +9,7 @@ import (
 	"api-gateway/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/load"
 	"github.com/zeromicro/go-zero/rest"
 )
 
@@ -19,6 +20,8 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
+
+	load.Disable()
 
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()

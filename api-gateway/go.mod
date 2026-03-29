@@ -6,9 +6,12 @@ require (
 	auth v0.0.0-00010101000000-000000000000
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/zeromicro/go-zero v1.10.0
+	post v0.0.0-00010101000000-000000000000
 )
 
 replace auth => ../auth
+
+replace post => ../post
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	ErrCircuitOpen      = errors.New("circuit breaker is open")
-	ErrTooManyRequests  = errors.New("too many requests")
+	ErrCircuitOpen     = errors.New("circuit breaker is open")
+	ErrTooManyRequests = errors.New("too many requests")
 )
 
 type State int
@@ -33,22 +33,22 @@ func (s State) String() string {
 }
 
 type CircuitBreakerConfig struct {
-	FailureThreshold   int           `json:",default=5"`
-	SuccessThreshold   int           `json:",default=3"`
-	Timeout            time.Duration `json:",default=30s"`
-	MaxHalfOpenReqs    int           `json:",default=1"`
-	FailureRate        float64       `json:",default=0.5"`
+	FailureThreshold int           `json:",default=5"`
+	SuccessThreshold int           `json:",default=3"`
+	Timeout          time.Duration `json:",default=30s"`
+	MaxHalfOpenReqs  int           `json:",default=1"`
+	FailureRate      float64       `json:",default=0.5"`
 }
 
 type CircuitBreaker struct {
-	mu               sync.RWMutex
-	state            State
-	failures         int
-	successes        int
-	requests         int
-	lastFailTime     time.Time
-	halfOpenReqs     int
-	config           CircuitBreakerConfig
+	mu           sync.RWMutex
+	state        State
+	failures     int
+	successes    int
+	requests     int
+	lastFailTime time.Time
+	halfOpenReqs int
+	config       CircuitBreakerConfig
 }
 
 func NewCircuitBreaker(config CircuitBreakerConfig) *CircuitBreaker {

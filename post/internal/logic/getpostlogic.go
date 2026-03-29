@@ -3,12 +3,15 @@ package logic
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"post/api/proto"
 	"post/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
+
+var ErrPostNotFound = errors.New("post not found")
 
 type GetPostLogic struct {
 	ctx    context.Context
@@ -26,7 +29,7 @@ func NewGetPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPostLo
 
 func (l *GetPostLogic) GetPost(in *proto.GetPostRequest) (*proto.GetPostResponse, error) {
 	if !l.svcCtx.BloomFilter.MightContain(in.PostId) {
-		return nil, nil
+		return nil, ErrPostNotFound
 	}
 
 	post, err := l.svcCtx.PostRepo.GetPostDetail(l.ctx, in.GetUserId(), in.GetPostId())
@@ -34,17 +37,17 @@ func (l *GetPostLogic) GetPost(in *proto.GetPostRequest) (*proto.GetPostResponse
 		return nil, err
 	}
 	if post == nil {
-		return nil, nil
+		return nil, ErrPostNotFound
 	}
 
 	var tags []string
 	if err := json.Unmarshal([]byte(post.Tags), &tags); err != nil {
-		return nil, err
+		tags = []string{}
 	}
 
 	comments, err := l.svcCtx.CommentRepo.ListByPostID(l.ctx, in.PostId)
 	if err != nil {
-		return nil, err
+		comments = nil
 	}
 
 	commentInfos := make([]*proto.CommentInfo, 0, len(comments))
