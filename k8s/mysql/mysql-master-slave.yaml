@@ -1,0 +1,421 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bobo-forum
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+  namespace: bobo-forum
+type: Opaque
+stringData:
+  root-password: "RootPassword123!"
+  replication-user: "repl"
+  replication-password: "ReplPassword123!"
+  app-user: "bobo"
+  app-password: "BoboPassword123!"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-master-config
+  namespace: bobo-forum
+data:
+  my.cnf: |
+    [mysqld]
+    server-id = 1
+    log-bin = mysql-bin
+    binlog-format = ROW
+    binlog-cache-size = 1M
+    max-binlog-size = 500M
+    expire-logs-days = 7
+    sync-binlog = 1
+    log-slave-updates = 1
+    
+    innodb-buffer-pool-size = 1G
+    innodb-log-file-size = 256M
+    innodb-flush-log-at-trx-commit = 1
+    innodb-lock-wait-timeout = 50
+    
+    max-connections = 1000
+    max-connect-errors = 1000
+    wait-timeout = 28800
+    interactive-timeout = 28800
+    
+    character-set-server = utf8mb4
+    collation-server = utf8mb4_unicode_ci
+    skip-character-set-client-handshake
+    
+    slow-query-log = 1
+    slow-query-log-file = /var/log/mysql/slow.log
+    long-query-time = 2
+    
+    [client]
+    default-character-set = utf8mb4
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-slave-config
+  namespace: bobo-forum
+data:
+  my.cnf: |
+    [mysqld]
+    server-id = 2
+    log-bin = mysql-bin
+    binlog-format = ROW
+    binlog-cache-size = 1M
+    max-binlog-size = 500M
+    expire-logs-days = 7
+    relay-log = relay-bin
+    relay-log-index = relay-bin.index
+    read-only = 1
+    log-slave-updates = 1
+    
+    innodb-buffer-pool-size = 1G
+    innodb-log-file-size = 256M
+    
+    max-connections = 1000
+    max-connect-errors = 1000
+    
+    character-set-server = utf8mb4
+    collation-server = utf8mb4_unicode_ci
+    skip-character-set-client-handshake
+    
+    slow-query-log = 1
+    slow-query-log-file = /var/log/mysql/slow.log
+    long-query-time = 2
+    
+    [client]
+    default-character-set = utf8mb4
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-scripts
+  namespace: bobo-forum
+data:
+  init-master.sql: |
+    CREATE USER IF NOT EXISTS 'repl'@'%' IDENTIFIED BY 'ReplPassword123!';
+    GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'repl'@'%';
+    CREATE USER IF NOT EXISTS 'bobo'@'%' IDENTIFIED BY 'BoboPassword123!';
+    GRANT ALL PRIVILEGES ON *.* TO 'bobo'@'%' WITH GRANT OPTION;
+    FLUSH PRIVILEGES;
+  init-slave.sql: |
+    STOP SLAVE;
+    CHANGE MASTER TO
+      MASTER_HOST='mysql-master',
+      MASTER_USER='repl',
+      MASTER_PASSWORD='ReplPassword123!',
+      MASTER_LOG_FILE='',
+      MASTER_LOG_POS=0,
+      GET_MASTER_PUBLIC_KEY=1;
+    START SLAVE;
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-master-pvc
+  namespace: bobo-forum
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-slave-pvc
+  namespace: bobo-forum
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-master
+  namespace: bobo-forum
+  labels:
+    app: mysql
+    role: master
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+      name: mysql
+  clusterIP: None
+  selector:
+    app: mysql
+    role: master
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-master-readwrite
+  namespace: bobo-forum
+  labels:
+    app: mysql
+    role: master
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+      name: mysql
+  selector:
+    app: mysql
+    role: master
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-slave
+  namespace: bobo-forum
+  labels:
+    app: mysql
+    role: slave
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+      name: mysql
+  selector:
+    app: mysql
+    role: slave
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-master
+  namespace: bobo-forum
+  labels:
+    app: mysql
+    role: master
+spec:
+  serviceName: mysql-master
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+      role: master
+  template:
+    metadata:
+      labels:
+        app: mysql
+        role: master
+    spec:
+      initContainers:
+        - name: init-mysql
+          image: mysql:8.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              mkdir -p /var/log/mysql
+              chown -R mysql:mysql /var/log/mysql
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: log-dir
+              mountPath: /var/log/mysql
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root-password
+            - name: MYSQL_DATABASE
+              value: "bobo_forum"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-config
+              mountPath: /etc/mysql/conf.d/my.cnf
+              subPath: my.cnf
+            - name: log-dir
+              mountPath: /var/log/mysql
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+                - -u
+                - root
+                - -p$(MYSQL_ROOT_PASSWORD)
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - mysql
+                - -h
+                - localhost
+                - -u
+                - root
+                - -p$(MYSQL_ROOT_PASSWORD)
+                - -e
+                - SELECT 1
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-master-pvc
+        - name: mysql-config
+          configMap:
+            name: mysql-master-config
+        - name: log-dir
+          emptyDir: {}
+        - name: init-scripts
+          configMap:
+            name: mysql-init-scripts
+            items:
+              - key: init-master.sql
+                path: init-master.sql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-slave
+  namespace: bobo-forum
+  labels:
+    app: mysql
+    role: slave
+spec:
+  serviceName: mysql-slave
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+      role: slave
+  template:
+    metadata:
+      labels:
+        app: mysql
+        role: slave
+    spec:
+      initContainers:
+        - name: wait-for-master
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until nc -z mysql-master-readwrite 3306; do
+                echo "Waiting for mysql-master to be ready..."
+                sleep 5
+              done
+              echo "Master is ready, starting slave..."
+        - name: init-mysql
+          image: mysql:8.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              mkdir -p /var/log/mysql
+              chown -R mysql:mysql /var/log/mysql
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: log-dir
+              mountPath: /var/log/mysql
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root-password
+            - name: MYSQL_DATABASE
+              value: "bobo_forum"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-config
+              mountPath: /etc/mysql/conf.d/my.cnf
+              subPath: my.cnf
+            - name: log-dir
+              mountPath: /var/log/mysql
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+                - -u
+                - root
+                - -p$(MYSQL_ROOT_PASSWORD)
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - mysql
+                - -h
+                - localhost
+                - -u
+                - root
+                - -p$(MYSQL_ROOT_PASSWORD)
+                - -e
+                - SELECT 1
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-slave-pvc
+        - name: mysql-config
+          configMap:
+            name: mysql-slave-config
+        - name: log-dir
+          emptyDir: {}
+        - name: init-scripts
+          configMap:
+            name: mysql-init-scripts
+            items:
+              - key: init-slave.sql
+                path: init-slave.sql
