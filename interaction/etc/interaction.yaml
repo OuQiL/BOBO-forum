@@ -1,0 +1,21 @@
+Name: interaction
+ListenOn: 0.0.0.0:8003
+
+MySQL:
+  DataSource: root:li200602@tcp(127.0.0.1:3306)/bobo_db?charset=utf8mb4&parseTime=true&loc=Local
+  MaxOpenConns: 100
+  MaxIdleConns: 10
+  ConnMaxLifetime: 3600
+  ConnMaxIdleTime: 600
+
+RedisConf:
+  Host: 127.0.0.1:6379
+  Type: node
+  Pass: ""
+
+Log:
+  File: interaction.log
+
+CpuThreshold: 0
+Timeout: 30000
+MaxConns: 10000

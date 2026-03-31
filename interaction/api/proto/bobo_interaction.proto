@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package interaction.v1;
+
+option go_package = "interaction/api/proto";
+
+message LikeRequest {
+    int64 user_id = 1;
+    int64 target_id = 2;
+    int32 target_type = 3; // 1-帖子 2-评论
+}
+
+message LikeResponse {
+    bool success = 1;
+}
+
+message UnlikeRequest {
+    int64 user_id = 1;
+    int64 target_id = 2;
+    int32 target_type = 3;
+}
+
+message UnlikeResponse {
+    bool success = 1;
+}
+
+message CreateCommentRequest {
+    int64 post_id = 1;
+    int64 user_id = 2;
+    string content = 3;
+    int64 parent_id = 4; // 0表示一级评论，非0表示回复
+}
+
+message CommentInfo {
+    int64 id = 1;
+    int64 post_id = 2;
+    int64 user_id = 3;
+    string username = 4;
+    string content = 5;
+    int64 parent_id = 6;
+    int64 reply_to_user_id = 7;
+    string reply_to_username = 8;
+    int64 like_count = 9;
+    int64 created_at = 10;
+}
+
+message CreateCommentResponse {
+    CommentInfo comment = 1;
+}
+
+message DeleteCommentRequest {
+    int64 comment_id = 1;
+    int64 user_id = 2;
+}
+
+message DeleteCommentResponse {
+    bool success = 1;
+}
+
+message GetCommentsRequest {
+    int64 post_id = 1;
+    int64 page = 2;
+    int64 page_size = 3;
+}
+
+message GetCommentsResponse {
+    repeated CommentInfo comments = 1;
+    int64 total = 2;
+}
+
+message GetLikeStatusRequest {
+    int64 user_id = 1;
+    repeated int64 target_ids = 2;
+    int32 target_type = 3;
+}
+
+message LikeStatus {
+    int64 target_id = 1;
+    bool is_liked = 2;
+}
+
+message GetLikeStatusResponse {
+    repeated LikeStatus statuses = 1;
+}
+
+service Interaction {
+    rpc Like(LikeRequest) returns (LikeResponse);
+    rpc Unlike(UnlikeRequest) returns (UnlikeResponse);
+    rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse);
+    rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse);
+    rpc GetComments(GetCommentsRequest) returns (GetCommentsResponse);
+    rpc GetLikeStatus(GetLikeStatusRequest) returns (GetLikeStatusResponse);
+}
