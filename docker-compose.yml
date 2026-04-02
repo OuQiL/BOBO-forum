@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: bobo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: li200602
+      MYSQL_DATABASE: bobo_db
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    networks:
+      - bobo-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: bobo-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - bobo-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth:
+    build: ./auth
+    container_name: bobo-auth
+    ports:
+      - "8001:8001"
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=li200602
+      - MYSQL_DATABASE=bobo_db
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - bobo-network
+
+  post:
+    build: ./post
+    container_name: bobo-post
+    ports:
+      - "8002:8002"
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=li200602
+      - MYSQL_DATABASE=bobo_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bobo-network
+
+volumes:
+  mysql_data:
+
+networks:
+  bobo-network:
+    driver: bridge

@@ -2,14 +2,14 @@ Name: post
 ListenOn: 0.0.0.0:8002
 
 MySQL:
-  DataSource: root:li200602@tcp(127.0.0.1:3306)/bobo_db?charset=utf8mb4&parseTime=true&loc=Local
+  DataSource: root:li200602@tcp(${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306})/${MYSQL_DATABASE:bobo_db}?charset=utf8mb4&parseTime=true&loc=Local
   MaxOpenConns: 100
   MaxIdleConns: 10
   ConnMaxLifetime: 3600
   ConnMaxIdleTime: 600
 
 RedisConf:
-  Host: 127.0.0.1:6379
+  Host: ${REDIS_HOST:127.0.0.1}:${REDIS_PORT:6379}
   Type: node
   Pass: ""
 

@@ -13,6 +13,24 @@ RedisConf:
   Type: node
   Pass: ""
 
+Kafka:
+  Brokers:
+    - 127.0.0.1:9092
+  Topic: like-action
+  GroupId: interaction-group
+  BatchSize: 100
+  BatchTimeout: 5
+
+LikeSync:
+  IntervalSeconds: 5
+
+ConsistencyCheck:
+  IntervalMinutes: 5
+  BatchSize: 100
+  AutoFix: true
+  EnableAlarm: true
+  AlarmThreshold: 10
+
 Log:
   File: interaction.log
 

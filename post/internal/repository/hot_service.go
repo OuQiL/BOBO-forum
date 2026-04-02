@@ -2,14 +2,15 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
-	"strings"
 	"time"
 
 	"post/internal/model"
 
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
@@ -28,7 +29,7 @@ const (
 )
 
 var (
-	ErrPostNotFound    = errors.New("post not found")
+	ErrPostNotFound       = errors.New("post not found")
 	ErrCircuitBreakerOpen = errors.New("circuit breaker is open")
 )
 
@@ -163,12 +164,13 @@ func (s *HotPostService) CachePostDetail(ctx context.Context, post *model.Post, 
 	}
 
 	key := fmt.Sprintf("%s:%d", PostDetailPrefix, post.ID)
-	data := fmt.Sprintf("%d|%d|%d|%s|%s|%s|%s|%d|%d|%d|%d|%d",
-		post.ID, post.UserID, post.CommunityID, post.Username, post.Title,
-		post.Content, post.Tags, post.LikeCount, post.CommentCount,
-		post.ViewCount, post.CreatedAt, post.UpdatedAt)
+	data, err := json.Marshal(post)
+	if err != nil {
+		logx.Errorf("Failed to marshal post for cache: %v", err)
+		return err
+	}
 
-	return s.redis.Setex(key, data, ttl)
+	return s.redis.Setex(key, string(data), ttl)
 }
 
 func (s *HotPostService) GetCachedPostDetail(ctx context.Context, postID int64) (*model.Post, error) {
@@ -200,25 +202,11 @@ func (s *HotPostService) GetCachedPostDetail(ctx context.Context, postID int64) 
 		return nil, nil
 	}
 
-	parts := strings.Split(data, "|")
-	if len(parts) != 12 {
+	post := &model.Post{}
+	if err := json.Unmarshal([]byte(data), post); err != nil {
 		s.circuitBreaker.RecordSuccess()
-		return nil, fmt.Errorf("invalid cached data")
-	}
-
-	post := &model.Post{
-		ID:           parseInt64(parts[0]),
-		UserID:       parseInt64(parts[1]),
-		CommunityID:  parseInt64(parts[2]),
-		Username:     parts[3],
-		Title:        parts[4],
-		Content:      parts[5],
-		Tags:         parts[6],
-		LikeCount:    parseInt64(parts[7]),
-		CommentCount: parseInt64(parts[8]),
-		ViewCount:    parseInt64(parts[9]),
-		CreatedAt:    parseInt64(parts[10]),
-		UpdatedAt:    parseInt64(parts[11]),
+		logx.Errorf("Failed to unmarshal post from cache: %v", err)
+		return nil, err
 	}
 
 	if s.localCache.ShouldCache(post.ViewCount) {
@@ -332,10 +320,4 @@ func (s *HotPostService) getTimeRangeKey(timeRange string) string {
 	default:
 		return HotPostsWeek
 	}
-}
-
-func parseInt64(s string) int64 {
-	var id int64
-	fmt.Sscanf(s, "%d", &id)
-	return id
 }

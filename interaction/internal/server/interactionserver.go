@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"interaction/api/proto"
+	"interaction/internal/logic"
 	"interaction/internal/svc"
 )
 
