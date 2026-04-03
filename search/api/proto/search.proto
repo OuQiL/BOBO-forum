@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package search;
+
+option go_package = "./proto";
+
+// SearchRequest 搜索请求
+message SearchRequest {
+  string keyword = 1;      // 搜索关键词
+  string type = 2;         // 搜索类型：post 或 user
+  int32 page = 3;          // 页码，默认 1
+  int32 size = 4;          // 每页数量，默认 10
+  
+  // 帖子搜索的过滤条件
+  optional int64 community_id = 5;
+  optional int64 author_id = 6;
+  optional string tags = 7;
+  optional int64 start_time = 8;  // 开始时间戳
+  optional int64 end_time = 9;    // 结束时间戳
+  
+  // 排序方式：relevance(相关性), latest(最新), hottest(最热)
+  string sort_by = 10;
+}
+
+// SearchResponse 搜索响应
+message SearchResponse {
+  int64 total = 1;         // 总数
+  repeated SearchResult list = 2;  // 结果列表
+  int32 page = 3;          // 当前页码
+  int32 size = 4;          // 每页数量
+}
+
+// SearchResult 搜索结果项
+message SearchResult {
+  string type = 1;         // 类型：post 或 user
+  
+  // 帖子信息
+  optional int64 post_id = 2;
+  optional int64 user_id = 3;
+  optional int64 community_id = 4;
+  optional string username = 5;
+  optional string title = 6;
+  optional string content = 7;
+  optional repeated string tags = 8;
+  optional int64 like_count = 9;
+  optional int64 comment_count = 10;
+  optional int64 view_count = 11;
+  optional int64 created_at = 12;
+  optional string highlight_title = 13;   // 高亮标题
+  optional string highlight_content = 14; // 高亮内容
+  
+  // 用户信息
+  optional string email = 15;
+  optional string nickname = 16;
+  optional string avatar = 17;
+  optional int32 gender = 18;
+  optional int64 user_created_at = 19;
+}
+
+// SyncRequest 同步数据请求
+message SyncRequest {
+  string sync_type = 1;    // full(全量) 或 incremental(增量)
+}
+
+// SyncResponse 同步数据响应
+message SyncResponse {
+  bool success = 1;
+  string message = 2;
+  int32 synced_count = 3;
+}
+
+// HealthCheckRequest 健康检查请求
+message HealthCheckRequest {
+}
+
+// HealthCheckResponse 健康检查响应
+message HealthCheckResponse {
+  bool healthy = 1;
+  string message = 2;
+  bool elasticsearch_connected = 3;
+}
+
+// SearchService 搜索服务
+service SearchService {
+  rpc Search(SearchRequest) returns (SearchResponse);
+  rpc SyncData(SyncRequest) returns (SyncResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}

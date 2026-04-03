@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=es-cluster
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - bobo-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # 如果需要带 ik 分词器的 ES，使用这个镜像（需要先构建）
+  # elasticsearch:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.elasticsearch
+  #   container_name: elasticsearch
+  #   environment:
+  #     - discovery.type=single-node
+  #     - xpack.security.enabled=false
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #   ports:
+  #     - "9200:9200"
+  #   networks:
+  #     - bobo-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: bobo123
+      MYSQL_DATABASE: bobo_db
+      MYSQL_USER: bobo
+      MYSQL_PASSWORD: bobo123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../sql:/docker-entrypoint-initdb.d
+    networks:
+      - bobo-network
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  search-rpc:
+    build:
+      context: ./search
+      dockerfile: Dockerfile
+    container_name: search-rpc
+    depends_on:
+      - elasticsearch
+      - mysql
+    ports:
+      - "9093:9093"
+    networks:
+      - bobo-network
+    environment:
+      - ES_HOST=elasticsearch
+      - MYSQL_HOST=mysql
+
+volumes:
+  es_data:
+  mysql_data:
+
+networks:
+  bobo-network:
+    driver: bridge

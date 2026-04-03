@@ -1,0 +1,37 @@
+Name: api-gateway
+Host: 0.0.0.0
+Port: 8080
+
+Auth:
+  Endpoints:
+    - 127.0.0.1:8001
+
+Post:
+  Endpoints:
+    - 127.0.0.1:8002
+  Timeout: 30000
+
+Search:
+  Endpoints:
+    - 127.0.0.1:8003
+
+Interaction:
+  Endpoints:
+    - 127.0.0.1:8004
+
+JWT:
+  Secret: b0b0-f0rum-s3cr3t-k3y-2024
+  Expire: 86400
+  PrevSecret: ""
+  PrevExpire: 0
+
+Log:
+  ServiceName: api-gateway
+  Mode: console
+
+MaxConns: 10000
+Timeout: 30000
+CpuThreshold: 0
+Shedding:
+  Name: api-gateway-shedding
+  Enable: false

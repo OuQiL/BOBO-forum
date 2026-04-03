@@ -1,0 +1,18 @@
+Name: search-rpc
+ListenOn: 0.0.0.0:9093
+
+Elasticsearch:
+  Addresses:
+    - http://elasticsearch:9200
+  Username: elastic
+  Password: bobo123
+  Timeout: 5
+
+MySQL:
+  Dsn: "root:bobo123@tcp(mysql:3306)/bobo_db?charset=utf8mb4&parseTime=true&loc=Local"
+  MaxIdleConns: 10
+  MaxOpenConns: 50
+
+Log:
+  Mode: console
+  Level: info

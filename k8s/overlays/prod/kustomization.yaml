@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: bobo-forum
+
+resources:
+  - ../../base
+
+images:
+  - name: bobo-forum/auth
+    newTag: v1.0.0
+  - name: bobo-forum/post
+    newTag: v1.0.0
+  - name: bobo-forum/search
+    newTag: v1.0.0
+  - name: bobo-forum/interaction
+    newTag: v1.0.0
+  - name: bobo-forum/gateway
+    newTag: v1.0.0
+
+replicas:
+  - name: auth-service
+    count: 3
+  - name: post-service
+    count: 3
+  - name: search-service
+    count: 2
+  - name: interaction-service
+    count: 3
+  - name: api-gateway
+    count: 3
