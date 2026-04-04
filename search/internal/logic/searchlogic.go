@@ -175,6 +175,11 @@ func (l *SearchLogic) SearchUsers(req *proto.SearchRequest) (*proto.SearchRespon
 
 // buildPostQuery 构建帖子查询
 func (l *SearchLogic) buildPostQuery(req *proto.SearchRequest) map[string]interface{} {
+	return BuildPostQuery(req)
+}
+
+// BuildPostQuery 构建帖子查询（导出函数供测试使用）
+func BuildPostQuery(req *proto.SearchRequest) map[string]interface{} {
 	from := (req.Page - 1) * req.Size
 
 	query := map[string]interface{}{
@@ -282,6 +287,11 @@ func (l *SearchLogic) buildPostQuery(req *proto.SearchRequest) map[string]interf
 
 // buildUserQuery 构建用户查询
 func (l *SearchLogic) buildUserQuery(req *proto.SearchRequest) map[string]interface{} {
+	return BuildUserQuery(req)
+}
+
+// BuildUserQuery 构建用户查询（导出函数供测试使用）
+func BuildUserQuery(req *proto.SearchRequest) map[string]interface{} {
 	from := (req.Page - 1) * req.Size
 
 	query := map[string]interface{}{
@@ -322,6 +332,11 @@ func (l *SearchLogic) buildUserQuery(req *proto.SearchRequest) map[string]interf
 
 // convertPostResult 转换帖子结果
 func (l *SearchLogic) convertPostResult(source map[string]interface{}, highlight interface{}) *proto.SearchResult {
+	return ConvertPostResult(source, highlight)
+}
+
+// ConvertPostResult 转换帖子结果（导出函数供测试使用）
+func ConvertPostResult(source map[string]interface{}, highlight interface{}) *proto.SearchResult {
 	result := &proto.SearchResult{
 		Type: "post",
 	}
@@ -381,6 +396,11 @@ func (l *SearchLogic) convertPostResult(source map[string]interface{}, highlight
 
 // convertUserResult 转换用户结果
 func (l *SearchLogic) convertUserResult(source map[string]interface{}, highlight interface{}) *proto.SearchResult {
+	return ConvertUserResult(source, highlight)
+}
+
+// ConvertUserResult 转换用户结果（导出函数供测试使用）
+func ConvertUserResult(source map[string]interface{}, highlight interface{}) *proto.SearchResult {
 	result := &proto.SearchResult{
 		Type: "user",
 	}
